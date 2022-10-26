@@ -3,9 +3,21 @@ import shutil
 import sys
 
 
+def folder_list(get_path):
+    folder_list = [
+                    pathlib.Path(get_path).resolve(),
+                    pathlib.Path(get_path / 'archives').resolve(),
+                    pathlib.Path(get_path / 'video').resolve(),
+                    pathlib.Path(get_path / 'audio').resolve(),
+                    pathlib.Path(get_path / 'documents').resolve(),
+                    pathlib.Path(get_path / 'images').resolve()
+                    ]
+    return folder_list
+
 def main():
     sort_folder = validation_path()
-    to_startfolder(sort_folder)
+    standart_list = folder_list(sort_folder)
+    to_startfolder(sort_folder, standart_list)
     sort_func(sort_folder)
     unpack_archive(sort_folder)
     print('Sorting complite')
@@ -59,41 +71,39 @@ def sort_func(get_path):
             elem.rename(video / elem.name)
 
 
-def to_startfolder(get_path):
+def to_startfolder(get_path, standart_list):
 
-    if sort_folder == '':
-        sort_folder = get_path
-
+        
     get_path = pathlib.Path(get_path).resolve()
     for elem in get_path.iterdir():
         if elem.is_dir():
             elem = elem.resolve()
-            if elem not in [sort_folder, sort_folder / 'archives', sort_folder / 'video', sort_folder / 'audio', sort_folder / 'documents', sort_folder / 'images']:
-                to_startfolder(elem)
+            if elem not in standart_list:
+                to_startfolder(elem, standart_list)
 
         if elem.is_file():
             try:
                 new_name = normalize(elem.stem) + elem.suffix
-                elem.rename(sort_folder / new_name)
+                elem.rename(standart_list[0] / new_name)
             except FileExistsError:
                 count = 0
                 while True:
                     count += 1
                     new_name = normalize(elem.stem) + \
                         '(' + str(count) + ')' + elem.suffix
-                    if not (sort_folder / new_name).exists:
-                        elem.rename(sort_folder / new_name)
+                    if not (standart_list[0] / new_name).exists:
+                        elem.rename(standart_list[0] / new_name)
                         break
 
-    if get_path not in [sort_folder, sort_folder / 'archives', sort_folder / 'video', sort_folder / 'audio', sort_folder / 'documents', sort_folder / 'images']:
+    if get_path not in standart_list:
         get_path.rmdir()
 
 
 def unpack_archive(get_path):
-    arcive = get_path / 'archives'
-    for elem in arcive.iterdir():
+    archive = get_path / 'archives'
+    for elem in archive.iterdir():
         if elem.suffix.lower() in ('.zip', '.gz', '.tar'):
-            stem_folder = arcive / elem.stem
+            stem_folder = archive / elem.stem
             shutil.unpack_archive(elem, stem_folder)
             elem.unlink()
 
